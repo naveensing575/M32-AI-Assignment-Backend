@@ -2,11 +2,11 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
-
-const JWT_SECRET = process.env.JWT_SECRET as string;
+import { JWT_SECRET } from "../utils/config";
 
 const register = async (req: Request, res: Response): Promise<void> => {
   const { name, email, password } = req.body;
+
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -26,13 +26,16 @@ const register = async (req: Request, res: Response): Promise<void> => {
     });
 
     res.status(201).json({ user: newUser, token });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err });
+  } catch (err: unknown) {
+    console.error("Register Error:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ message: "Server error", error: message });
   }
 };
 
 const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -47,9 +50,12 @@ const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+
     res.status(200).json({ user, token });
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err });
+  } catch (err: unknown) {
+    console.error("Login Error:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    res.status(500).json({ message: "Server error", error: message });
   }
 };
 
