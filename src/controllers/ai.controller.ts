@@ -42,13 +42,26 @@ export const getHistory = async (
   req: AuthRequest,
   res: Response
 ): Promise<void> => {
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = parseInt(req.query.skip as string) || 0;
+
   try {
-    const history = await Interaction.find({ userId: req.userId }).sort({
-      createdAt: -1,
+    const history = await Interaction.find({ userId: req.userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await Interaction.countDocuments({ userId: req.userId });
+
+    res.status(200).json({
+      total,
+      count: history.length,
+      limit,
+      skip,
+      data: history,
     });
-    res.status(200).json(history);
   } catch (error: unknown) {
-    console.error("History Fetch Error:", error);
+    console.error("History Pagination Error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     res
       .status(500)
